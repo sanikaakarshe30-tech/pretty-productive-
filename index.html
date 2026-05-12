@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Iron Man OS">
+    <meta name="theme-color" content="#050c14">
+    <meta name="description" content="Iron Man OS - Your personal productivity system">
+    <link rel="apple-touch-icon" href="https://img.icons8.com/plasticine/200/iron-man.png">
+    <link rel="manifest" id="manifestLink">
+    <title>⚡ Iron Man OS</title>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;500;600;700&display=swap');
+
+        *{ margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+        :root{
+            --arc:#00d4ff;
+            --pink:#ff8cb4;
+            --glass:rgba(255,255,255,0.06);
+            --glass-b:rgba(0,212,255,0.18);
+            --text:#e8f4ff;
+            --muted:#7a9ab8;
+        }
+
+        body{
+            font-family:'Rajdhani',sans-serif;
+            background:#050c14;
+            min-height:100vh;
+            color:var(--text);
+            overflow-x:hidden;
+            width:100%;
+        }
+
+        /* ── Install Banner ── */
+        #installBanner{
+            position:fixed; top:0; left:0; width:100%; z-index:10000;
+            background:linear-gradient(135deg, rgba(0,212,255,0.18), rgba(0,50,80,0.95));
+            border-bottom:1px solid var(--arc);
+            padding:12px 16px;
+            display:none;
+            align-items:center;
+            justify-content:space-between;
+            gap:10px;
+            backdrop-filter:blur(12px);
+        }
+        #installBanner.show { display:flex; animation: slideDown 0.4s ease; }
+        @keyframes slideDown { from { transform:translateY(-100%); } to { transform:translateY(0); } }
+        .install-text { font-family:'Orbitron'; font-size:11px; color:var(--arc); letter-spacing:1px; flex:1; }
+        .install-text span { display:block; font-family:'Rajdhani'; font-size:12px; color:var(--muted); letter-spacing:0; margin-top:2px; }
+        .btn-install { background:var(--arc); color:#000; border:none; border-radius:8px; padding:8px 14px; font-family:'Orbitron'; font-size:10px; font-weight:700; cursor:pointer; white-space:nowrap; }
+        .btn-dismiss { background:transparent; color:var(--muted); border:1px solid var(--glass-b); border-radius:8px; padding:8px 10px; font-size:12px; cursor:pointer; }
+
+        /* ── iOS Install Guide ── */
+        #iosGuide{
+            position:fixed; inset:0; background:rgba(0,0,0,0.92);
+            z-index:10001; display:none; flex-direction:column;
+            align-items:center; justify-content:center; padding:30px;
+            backdrop-filter:blur(18px);
+        }
+        #iosGuide.show { display:flex; }
+        .ios-card { background:rgba(0,30,50,0.95); border:1px solid var(--arc); border-radius:24px; padding:28px 24px; max-width:340px; width:100%; text-align:center; }
+        .ios-title { font-family:'Orbitron'; color:var(--arc); font-size:14px; letter-spacing:2px; margin-bottom:20px; }
+        .ios-step { display:flex; align-items:center; gap:14px; margin-bottom:18px; text-align:left; }
+        .ios-num { width:32px; height:32px; border-radius:50%; background:var(--arc); color:#000; font-family:'Orbitron'; font-weight:700; font-size:13px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+        .ios-desc { font-size:14px; color:var(--text); line-height:1.4; }
+        .ios-desc b { color:var(--arc); }
+        .ios-arrow { font-size:28px; margin:10px 0; }
+        .btn-ios-close { margin-top:10px; background:transparent; border:1px solid var(--glass-b); color:var(--muted); border-radius:12px; padding:10px 24px; font-family:'Rajdhani'; font-size:14px; cursor:pointer; }
+
+        /* ── Success Overlay ── */
+        #successOverlay{
+            position:fixed; inset:0; background:rgba(0,0,0,0.92); z-index:9999;
+            display:none; flex-direction:column; align-items:center; justify-content:center;
+            backdrop-filter:blur(18px); text-align:center; padding:20px;
+            cursor:pointer;
+        }
+        #successOverlay.show { display:flex; animation: overlayIn 0.3s ease; }
+        @keyframes overlayIn { from { opacity:0; transform:scale(0.95); } to { opacity:1; transform:scale(1); } }
+
+        #successVideo {
+            width: 300px; max-width:85vw; border-radius: 22px;
+            border: 2px solid var(--arc);
+            box-shadow: 0 0 40px rgba(0,212,255,0.5), 0 0 80px rgba(0,212,255,0.2);
+            margin-bottom: 22px;
+            animation: gifPop 0.4s cubic-bezier(0.34,1.56,0.64,1);
+            display: none;
+        }
+        #successGif {
+            width: 300px; max-width:85vw; height: auto; border-radius: 22px;
+            border: 2px solid var(--arc);
+            box-shadow: 0 0 40px rgba(0,212,255,0.5), 0 0 80px rgba(0,212,255,0.2);
+            margin-bottom: 22px;
+            animation: gifPop 0.4s cubic-bezier(0.34,1.56,0.64,1);
+        }
+        @keyframes gifPop { from { transform:scale(0.6); opacity:0; } to { transform:scale(1); opacity:1; } }
+
+        #successMessage {
+            font-family:'Orbitron'; color:var(--arc);
+            margin-bottom:10px; letter-spacing:2px; font-size:18px;
+            text-shadow: 0 0 20px rgba(0,212,255,0.7);
+        }
+        #successSub { font-family:'Rajdhani'; color:var(--muted); font-size:13px; letter-spacing:1px; }
+
+        /* ── App Layout ── */
+        .app{ max-width:440px; margin:auto; padding:18px 15px 120px; display:none; }
+        .app.active{ display:block; animation: fadeIn 0.4s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Push content down when install banner is showing */
+        body.has-banner .app { padding-top:80px; }
+
+        .header{ margin-top:18px; margin-bottom:20px; }
+        .header h1{ font-family:'Orbitron',sans-serif; font-size:20px; font-weight:900; color:var(--arc); text-shadow:0 0 18px rgba(0,212,255,0.45); }
+
+        .pinned-banner{
+            background:linear-gradient(135deg, rgba(0,212,255,0.11), rgba(0,80,130,0.16));
+            border:1px solid rgba(0,212,255,0.32); border-left:4px solid var(--arc);
+            border-radius:16px; padding:15px 16px; margin-bottom:16px; min-height:80px;
+            display:flex; align-items:center; justify-content:center;
+        }
+        #pinnedText{ font-weight:600; text-align:center; line-height:1.4; font-size:16px; color: var(--arc); }
+
+        .card{ background:var(--glass); border:1px solid var(--glass-b); border-radius:20px; padding:18px; margin-bottom:14px; backdrop-filter:blur(12px); }
+        .card h2{ font-family:'Orbitron',sans-serif; font-size:11px; color:var(--arc); letter-spacing:1px; margin-bottom:12px; text-transform:uppercase; }
+
+        input, textarea, select{
+            width:100%; background:rgba(0,0,0,0.38); border:1px solid var(--glass-b);
+            border-radius:12px; color:var(--text); padding:11px 13px;
+            font-family:'Rajdhani',sans-serif; font-size:16px; margin-bottom:10px; outline:none;
+        }
+
+        .btn{ border:none; border-radius:12px; padding:12px 16px; cursor:pointer; font-weight:700; transition: 0.3s; font-family:'Rajdhani',sans-serif; font-size:15px; }
+        .btn:active{ transform: scale(0.95); }
+        .btn-primary{ background:linear-gradient(135deg, var(--arc), #0099bb); color:#000; width:100%; }
+        .btn-pink{ background:linear-gradient(135deg, var(--pink), #ff5c93); color:#000; width:100%; }
+
+        .item-row{
+            background:rgba(0,0,0,0.28); border:1px solid var(--glass-b);
+            border-radius:15px; padding:14px; margin-bottom:10px;
+            display:flex; justify-content:space-between; align-items:center;
+            transition: opacity 0.3s, border-color 0.3s;
+        }
+        .item-row.done{ opacity:.3; text-decoration:line-through; border-color: transparent; }
+        .item-row input[type="checkbox"] { width: 20px; height: 20px; cursor: pointer; accent-color: var(--arc); flex-shrink: 0; margin-bottom: 0; }
+
+        .history-entry{ border-bottom:1px solid var(--glass-b); padding:15px 0; }
+        .h-date{ color:var(--arc); font-weight:700; font-family:'Orbitron'; font-size:13px; }
+        .h-body{ font-size:13px; color:var(--muted); margin-top:8px; line-height:1.4; }
+
+        .bottom-nav{
+            position:fixed; bottom:0; left:0; width:100%;
+            background:rgba(4,11,20,0.97); border-top:1px solid var(--glass-b);
+            display:flex; justify-content:space-around; padding:12px 0 25px; z-index:999;
+        }
+        .nav-item{ color:var(--muted); text-align:center; font-size:10px; cursor:pointer; flex:1; }
+        .nav-item.active{ color:var(--arc); }
+        .nav-item.active-pink{ color:var(--pink); }
+        .nav-item .icon{ display:block; font-size:22px; margin-bottom:4px; }
+
+        #pomoTime.ticking { animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+
+        /* ── Video upload section ── */
+        .video-tip { font-size:12px; color:var(--muted); margin-top:8px; line-height:1.5; }
+        .video-preview { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+        .video-thumb { position:relative; width:80px; height:60px; border-radius:10px; overflow:hidden; border:1px solid var(--glass-b); background:#000; }
+        .video-thumb video { width:100%; height:100%; object-fit:cover; }
+        .video-thumb .del-btn { position:absolute; top:2px; right:2px; background:rgba(255,0,0,0.7); border:none; color:#fff; font-size:10px; border-radius:4px; padding:1px 5px; cursor:pointer; }
+        .video-label { font-size:10px; color:var(--muted); text-align:center; margin-top:3px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; width:80px; }
+    </style>
+</head>
+
+<body>
+
+    <!-- ── Install Banner (Android/Desktop) ── -->
+    <div id="installBanner">
+        <div class="install-text">
+            📲 INSTALL IRON MAN OS
+            <span>Add to Home Screen for the full app experience</span>
+        </div>
+        <button class="btn-install" onclick="triggerInstall()">INSTALL</button>
+        <button class="btn-dismiss" onclick="dismissBanner()">✕</button>
+    </div>
+
+    <!-- ── iOS Install Guide ── -->
+    <div id="iosGuide">
+        <div class="ios-card">
+            <div class="ios-title">📲 INSTALL ON iPHONE</div>
+            <div class="ios-step">
+                <div class="ios-num">1</div>
+                <div class="ios-desc">Tap the <b>Share</b> button at the bottom of your Safari browser <b>⬆️</b></div>
+            </div>
+            <div class="ios-step">
+                <div class="ios-num">2</div>
+                <div class="ios-desc">Scroll down and tap <b>"Add to Home Screen"</b></div>
+            </div>
+            <div class="ios-step">
+                <div class="ios-num">3</div>
+                <div class="ios-desc">Tap <b>"Add"</b> in the top right — done! 🎉</div>
+            </div>
+            <button class="btn-ios-close" onclick="document.getElementById('iosGuide').classList.remove('show')">GOT IT ✓</button>
+        </div>
+    </div>
+
+    <!-- ── Success Overlay ── -->
+    <div id="successOverlay" onclick="closeOverlay()">
+        <video id="successVideo" autoplay loop muted playsinline></video>
+        <img id="successGif" src="" alt="Success">
+        <h2 id="successMessage">MISSION COMPLETE</h2>
+        <p id="successSub">TAP TO DISMISS</p>
+    </div>
+
+    <!-- Home Page -->
+    <div id="homePage" class="app active">
+        <div class="header"><h1>INITIATING PROTOCOL ⚡</h1></div>
+        <div class="pinned-banner"><div id="pinnedText">System Online...</div></div>
+        <div class="card">
+            <h2>⚙️ CHOOSE PRESET VIBE</h2>
+            <select id="quoteSelector" onchange="applyPresetQuote()"></select>
+        </div>
+        <div class="card">
+            <h2>⚡ DAILY PROTOCOLS</h2>
+            <div id="habitList"></div>
+            <input type="text" id="habitInput" placeholder="New Core Habit...">
+            <button class="btn btn-primary" onclick="addHabit()">Add Protocol</button>
+        </div>
+        <div class="card">
+            <h2>🎬 CELEBRATION VIDEOS</h2>
+            <p class="video-tip">Upload your own MP4 videos to play when you complete a task! They'll be saved on your device.</p>
+            <input type="file" id="videoUpload" accept="video/mp4,video/*" multiple style="margin-top:8px;" onchange="handleVideoUpload(event)">
+            <div class="video-preview" id="videoPreview"></div>
+        </div>
+    </div>
+
+    <!-- Study Page -->
+    <div id="studyPage" class="app">
+        <div class="header"><h1>📚 STUDY HUD</h1></div>
+        <div class="card">
+            <h2>⏳ POMODORO</h2>
+            <div id="pomoTime" style="font-family:'Orbitron'; font-size:42px; text-align:center; color:var(--arc); margin:10px 0;">25:00</div>
+            <button class="btn btn-primary" id="pomoBtn" onclick="togglePomo()">START SEQUENCE</button>
+        </div>
+        <div class="card">
+            <h2>🎯 TARGETS</h2>
+            <input type="text" id="dailyTargetInput" placeholder="Set today's target...">
+            <button class="btn btn-primary" onclick="saveDailyTarget()">SET DAILY</button>
+            <div id="dailyTargetDisplay" style="margin:10px 0; color:var(--arc); font-weight:700; font-size:14px;"></div>
+            <input type="text" id="monthlyTargetInput" placeholder="Set monthly goal...">
+            <button class="btn btn-pink" onclick="saveMonthlyTarget()">SET MONTHLY</button>
+            <div id="monthlyTargetDisplay" style="margin-top:10px; color:var(--pink); font-weight:700; font-size:14px;"></div>
+        </div>
+        <div class="card">
+            <h2>📝 DAILY MISSIONS</h2>
+            <div id="dailyStudyList"></div>
+            <textarea id="dailyStudyInput" placeholder="New missions (one per line)..."></textarea>
+            <button class="btn btn-primary" onclick="addStudyTask()">Deploy Missions</button>
+        </div>
+    </div>
+
+    <!-- Journal Page -->
+    <div id="journalPage" class="app">
+        <div class="header"><h1>📖 PRIVATE JOURNAL</h1></div>
+        <div class="card" id="journalLockCard">
+            <h2>🔐 JOURNAL LOCK</h2>
+            <input type="password" id="journalPassword" placeholder="Enter Access Code...">
+            <button class="btn btn-primary" onclick="unlockJournal()">UNLOCK</button>
+        </div>
+        <div id="journalContent" style="display:none;">
+            <button class="btn btn-pink" style="margin-bottom:15px;" onclick="lockJournal()">LOCK JOURNAL</button>
+            <div class="card">
+                <h2>✍️ NEW ENTRY</h2>
+                <textarea id="journalInput" rows="6" placeholder="Recording entry..."></textarea>
+                <button class="btn btn-primary" onclick="saveJournalEntry()">SAVE ENTRY</button>
+            </div>
+            <div id="journalEntries"></div>
+        </div>
+    </div>
+
+    <!-- History/Archive Page -->
+    <div id="archivePage" class="app">
+        <div class="header"><h1>📂 MASTER ARCHIVE</h1></div>
+        <div class="card">
+            <h2>📜 PERMANENT NOTES</h2>
+            <textarea id="permanentNotes" placeholder="General lab notes..." rows="4" oninput="savePermanentNotes()"></textarea>
+        </div>
+        <div id="masterArchiveList"></div>
+    </div>
+
+    <!-- Period Page -->
+    <div id="periodPage" class="app">
+        <div class="header"><h1 style="color:var(--pink)">🩷 RED ROOM</h1></div>
+        <div class="card">
+            <h2 style="color:var(--pink)">📊 PREDICTIONS</h2>
+            <div style="font-size:16px; margin-bottom:8px;">Next Period: <span id="nextPeriodDate" style="color:var(--pink); font-weight:700;">--</span></div>
+            <div style="font-size:16px;">Power Window: <span id="ovulationDate" style="color:var(--pink); font-weight:700;">--</span></div>
+        </div>
+        <div class="card">
+            <h2 style="color:var(--pink)">📑 TODAY'S LOG</h2>
+            <textarea id="periodSymptoms" placeholder="Symptoms, mood, meds..." rows="4" oninput="saveDailyPeriod()"></textarea>
+        </div>
+        <div class="card">
+            <h2 style="color:var(--pink)">🛠️ CALIBRATE</h2>
+            <input type="date" id="lastPeriodInput">
+            <button class="btn btn-pink" onclick="updatePeriodData()">Update Cycle</button>
+        </div>
+    </div>
+
+    <nav class="bottom-nav">
+        <div class="nav-item active" id="nav-home" onclick="showPage('home')"><span class="icon">🏠</span>Home</div>
+        <div class="nav-item" id="nav-study" onclick="showPage('study')"><span class="icon">📚</span>Study</div>
+        <div class="nav-item" id="nav-journal" onclick="showPage('journal')"><span class="icon">📖</span>Journal</div>
+        <div class="nav-item" id="nav-archive" onclick="showPage('archive')"><span class="icon">📂</span>History</div>
+        <div class="nav-item" id="nav-period" onclick="showPage('period')"><span class="icon">🩷</span>Period</div>
+    </nav>
+
+    <script>
+        // ── PWA Install Logic ─────────────────────────────────────────────────────
+        let deferredPrompt = null;
+        const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+        const isInStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+
+        // Inject manifest dynamically (so it works as a single HTML file)
+        const manifestData = {
+            name: "Iron Man OS",
+            short_name: "IronMan OS",
+            description: "Your personal Iron Man productivity system",
+            start_url: "./",
+            display: "standalone",
+            background_color: "#050c14",
+            theme_color: "#00d4ff",
+            orientation: "portrait",
+            icons: [
+                { src: "https://img.icons8.com/plasticine/192/iron-man.png", sizes: "192x192", type: "image/png" },
+                { src: "https://img.icons8.com/plasticine/512/iron-man.png", sizes: "512x512", type: "image/png" }
+            ]
+        };
+        const manifestBlob = new Blob([JSON.stringify(manifestData)], { type: 'application/json' });
+        const manifestURL = URL.createObjectURL(manifestBlob);
+        document.getElementById('manifestLink').setAttribute('href', manifestURL);
+        document.getElementById('manifestLink').setAttribute('rel', 'manifest');
+
+        // Register service worker for offline use
+        if ('serviceWorker' in navigator) {
+            const swCode = `
+                const CACHE = 'ironman-os-v1';
+                const ASSETS = ['./', './index.html'];
+                self.addEventListener('install', e => {
+                    e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS).catch(() => {})));
+                });
+                self.addEventListener('fetch', e => {
+                    e.respondWith(caches.match(e.request).then(r => r || fetch(e.request).catch(() => new Response('Offline'))));
+                });
+            `;
+            const swBlob = new Blob([swCode], { type: 'application/javascript' });
+            const swURL = URL.createObjectURL(swBlob);
+            navigator.serviceWorker.register(swURL).catch(() => {});
+        }
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            if (!isInStandaloneMode) showInstallBanner();
+        });
+
+        function showInstallBanner() {
+            document.getElementById('installBanner').classList.add('show');
+            document.body.classList.add('has-banner');
+        }
+
+        function triggerInstall() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then(() => {
+                    deferredPrompt = null;
+                    dismissBanner();
+                });
+            }
+        }
+
+        function dismissBanner() {
+            document.getElementById('installBanner').classList.remove('show');
+            document.body.classList.remove('has-banner');
+        }
+
+        function showIOSGuide() {
+            document.getElementById('iosGuide').classList.add('show');
+        }
+
+        // Show iOS guide if on Safari iOS and not installed
+        window.addEventListener('load', () => {
+            if (isIOS && !isInStandaloneMode) {
+                setTimeout(showIOSGuide, 2000);
+            }
+        });
+
+        window.addEventListener('appinstalled', () => {
+            dismissBanner();
+            deferredPrompt = null;
+        });
+
+        // ── Video Storage (IndexedDB) ─────────────────────────────────────────────
+        let userVideos = []; // Array of { name, url } (blob URLs recreated each session)
+        let videoDB = null;
+
+        function openVideoDB() {
+            return new Promise((resolve, reject) => {
+                const req = indexedDB.open('IronManVideos', 1);
+                req.onupgradeneeded = e => {
+                    e.target.result.createObjectStore('videos', { keyPath: 'name' });
+                };
+                req.onsuccess = e => { videoDB = e.target.result; resolve(videoDB); };
+                req.onerror = reject;
+            });
+        }
+
+        async function saveVideoToDB(name, blob) {
+            const db = await openVideoDB();
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction('videos', 'readwrite');
+                tx.objectStore('videos').put({ name, blob });
+                tx.oncomplete = resolve;
+                tx.onerror = reject;
+            });
+        }
+
+        async function loadVideosFromDB() {
+            const db = await openVideoDB();
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction('videos', 'readonly');
+                const req = tx.objectStore('videos').getAll();
+                req.onsuccess = e => resolve(e.target.result);
+                req.onerror = reject;
+            });
+        }
+
+        async function deleteVideoFromDB(name) {
+            const db = await openVideoDB();
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction('videos', 'readwrite');
+                tx.objectStore('videos').delete(name);
+                tx.oncomplete = resolve;
+                tx.onerror = reject;
+            });
+        }
+
+        async function handleVideoUpload(event) {
+            const files = Array.from(event.target.files);
+            for (const file of files) {
+                if (!file.type.startsWith('video/')) continue;
+                await saveVideoToDB(file.name, file);
+            }
+            await refreshVideoList();
+            event.target.value = '';
+        }
+
+        async function refreshVideoList() {
+            const stored = await loadVideosFromDB();
+            userVideos = stored.map(v => ({
+                name: v.name,
+                url: URL.createObjectURL(v.blob)
+            }));
+            renderVideoPreview();
+        }
+
+        function renderVideoPreview() {
+            const container = document.getElementById('videoPreview');
+            if (userVideos.length === 0) {
+                container.innerHTML = '<p style="font-size:12px; color:var(--muted);">No videos uploaded yet.</p>';
+                return;
+            }
+            container.innerHTML = userVideos.map((v, i) => `
+                <div>
+                    <div class="video-thumb">
+                        <video src="${v.url}" muted preload="metadata"></video>
+                        <button class="del-btn" onclick="removeVideo('${v.name}')">✕</button>
+                    </div>
+                    <div class="video-label">${v.name}</div>
+                </div>
+            `).join('');
+        }
+
+        async function removeVideo(name) {
+            await deleteVideoFromDB(name);
+            await refreshVideoList();
+        }
+
+        // ── GIFs (fallback if no user videos) ────────────────────────────────────
+        const successGifs = [
+            "https://media.giphy.com/media/AbYxDs20DEC6/giphy.gif",
+            "https://media.giphy.com/media/rlfucqTYMTyc0/giphy.gif",
+            "https://media.giphy.com/media/oXnN2TNSgfJQI/giphy.gif",
+            "https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif",
+            "https://media.giphy.com/media/5GoVLqeAOo6PK/giphy.gif",
+        ];
+        const pomodoroGifs = [
+            "https://media.giphy.com/media/3oz8xIsloV7zOmt81G/giphy.gif",
+            "https://media.giphy.com/media/l0HlBO7eyXzSZkJri/giphy.gif",
+            "https://media.giphy.com/media/5GoVLqeAOo6PK/giphy.gif",
+        ];
+        const successMessages = [
+            "MISSION COMPLETE ✅", "TARGET NEUTRALIZED 🎯", "PROTOCOL EXECUTED ⚡",
+            "OBJECTIVE CLEARED 💥", "SYSTEM: SLAY MODE 💅", "TASK OBLITERATED 🔥"
+        ];
+
+        let gifCounter = 0;
+        let overlayTimeout;
+
+        function triggerSuccess(gifSet, useVideo = true) {
+            const overlay = document.getElementById('successOverlay');
+            const gifImg = document.getElementById('successGif');
+            const videoEl = document.getElementById('successVideo');
+            const msg = document.getElementById('successMessage');
+
+            msg.innerText = successMessages[Math.floor(Math.random() * successMessages.length)];
+
+            // Use user's uploaded video if available
+            if (useVideo && userVideos.length > 0) {
+                const pick = userVideos[Math.floor(Math.random() * userVideos.length)];
+                videoEl.src = pick.url;
+                videoEl.style.display = 'block';
+                gifImg.style.display = 'none';
+                videoEl.play().catch(() => {});
+            } else {
+                // Fallback to GIF
+                const gifs = gifSet || successGifs;
+                gifImg.src = gifs[gifCounter % gifs.length];
+                gifCounter = (gifCounter + 1) % gifs.length;
+                gifImg.style.display = 'block';
+                videoEl.style.display = 'none';
+                videoEl.src = '';
+            }
+
+            clearTimeout(overlayTimeout);
+            overlay.classList.add('show');
+            overlayTimeout = setTimeout(closeOverlay, 4000);
+        }
+
+        function closeOverlay() {
+            clearTimeout(overlayTimeout);
+            const videoEl = document.getElementById('successVideo');
+            videoEl.pause();
+            videoEl.src = '';
+            document.getElementById('successOverlay').classList.remove('show');
+        }
+
+        // ── App State ─────────────────────────────────────────────────────────────
+        const quotes = [
+            "Hot people finish their tasks 💅", "Delulu but still productive ✨", "Romanticize the grind, bestie 🌸",
+            "Locked in… kinda 🔒", "Your future self is side-eyeing you 👀", "Productivity looks good on you 😌",
+            "Do it for the plot 🎬", "Tiny habits. Huge slay 💖", "Focus, babe. Chaos later 🧠",
+            "Locked in era activated ⚡", "Your comeback starts with one checkbox ☑️", "Future millionaire behavior starts now 💸",
+            "Go make today less embarrassing 💀", "✨ Custom Motivation"
+        ];
+
+        let habits = JSON.parse(localStorage.getItem('habits')) || [];
+        let dailyTasks = JSON.parse(localStorage.getItem('dailyTasks')) || [];
+        let masterArchive = JSON.parse(localStorage.getItem('masterArchive')) || [];
+        let journalEntries = JSON.parse(localStorage.getItem('journalEntries')) || [];
+        let pomoTimer;
+
+        function save() {
+            localStorage.setItem('habits', JSON.stringify(habits));
+            localStorage.setItem('dailyTasks', JSON.stringify(dailyTasks));
+        }
+
+        function showPage(page) {
+            document.querySelectorAll('.app').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active', 'active-pink'));
+            document.getElementById(page + 'Page').classList.add('active');
+            const nav = document.getElementById('nav-' + page);
+            if (page === 'period') nav.classList.add('active-pink');
+            else nav.classList.add('active');
+            if (page === 'archive') renderArchive();
+        }
+
+        // ── HABITS ────────────────────────────────────────────────────────────────
+        function addHabit() {
+            const input = document.getElementById('habitInput');
+            if (!input.value.trim()) return;
+            habits.push({ name: input.value.trim(), done: false });
+            input.value = "";
+            save(); renderHome();
+        }
+
+        function toggleHabit(i) {
+            habits[i].done = !habits[i].done;
+            save(); renderHome();
+            if (habits[i].done) triggerSuccess(successGifs);
+        }
+
+        function renderHome() {
+            document.getElementById('habitList').innerHTML = habits.map((h, i) => `
+                <div class="item-row ${h.done ? 'done' : ''}">
+                    <span>${h.name}</span>
+                    <input type="checkbox" ${h.done ? 'checked' : ''} onchange="toggleHabit(${i})">
+                </div>`).join('');
+        }
+
+        // ── STUDY TASKS ───────────────────────────────────────────────────────────
+        function addStudyTask() {
+            const input = document.getElementById('dailyStudyInput');
+            input.value.split('\n').forEach(t => { if (t.trim()) dailyTasks.push({ text: t.trim(), done: false }); });
+            input.value = "";
+            save(); renderStudy();
+        }
+
+        function toggleStudyTask(i) {
+            dailyTasks[i].done = !dailyTasks[i].done;
+            save(); renderStudy();
+            if (dailyTasks[i].done) triggerSuccess(successGifs);
+        }
+
+        function renderStudy() {
+            document.getElementById('dailyStudyList').innerHTML = dailyTasks.map((t, i) => `
+                <div class="item-row ${t.done ? 'done' : ''}">
+                    <span>${t.text}</span>
+                    <input type="checkbox" ${t.done ? 'checked' : ''} onchange="toggleStudyTask(${i})">
+                </div>`).join('');
+        }
+
+        // ── POMODORO ──────────────────────────────────────────────────────────────
+        function togglePomo() {
+            const btn = document.getElementById('pomoBtn');
+            const display = document.getElementById('pomoTime');
+            if (pomoTimer) {
+                clearInterval(pomoTimer); pomoTimer = null;
+                btn.innerText = 'START SEQUENCE'; display.classList.remove('ticking');
+            } else {
+                let s = 1500;
+                btn.innerText = 'ABORT'; display.classList.add('ticking');
+                pomoTimer = setInterval(() => {
+                    s--;
+                    display.innerText = `${Math.floor(s/60)}:${(s%60)<10?'0'+(s%60):(s%60)}`;
+                    if (s <= 0) {
+                        clearInterval(pomoTimer); pomoTimer = null;
+                        btn.innerText = 'START SEQUENCE'; display.classList.remove('ticking');
+                        display.innerText = '25:00';
+                        triggerSuccess(pomodoroGifs);
+                    }
+                }, 1000);
+            }
+        }
+
+        // ── TARGETS ───────────────────────────────────────────────────────────────
+        function saveDailyTarget() {
+            localStorage.setItem('dailyTarget', document.getElementById('dailyTargetInput').value);
+            renderTargets();
+        }
+        function saveMonthlyTarget() {
+            localStorage.setItem('monthlyTarget', document.getElementById('monthlyTargetInput').value);
+            renderTargets();
+        }
+        function renderTargets() {
+            document.getElementById('dailyTargetDisplay').innerText = "CURRENT: " + (localStorage.getItem('dailyTarget') || 'None');
+            document.getElementById('monthlyTargetDisplay').innerText = "CURRENT: " + (localStorage.getItem('monthlyTarget') || 'None');
+            document.getElementById('dailyTargetInput').value = localStorage.getItem('dailyTarget') || '';
+            document.getElementById('monthlyTargetInput').value = localStorage.getItem('monthlyTarget') || '';
+        }
+
+        // ── JOURNAL ───────────────────────────────────────────────────────────────
+        function unlockJournal() {
+            const pass = document.getElementById('journalPassword').value;
+            const savedPass = localStorage.getItem('journalPassword');
+            if (!savedPass) {
+                if (pass) { localStorage.setItem('journalPassword', pass); alert('Password Set! Remember it — it cannot be recovered.'); }
+                else { alert('Set a password first'); return; }
+            }
+            if (pass === localStorage.getItem('journalPassword')) {
+                document.getElementById('journalContent').style.display = 'block';
+                document.getElementById('journalLockCard').style.display = 'none';
+                renderJournal();
+            } else { alert('Access Denied'); }
+        }
+
+        function lockJournal() {
+            document.getElementById('journalContent').style.display = 'none';
+            document.getElementById('journalLockCard').style.display = 'block';
+            document.getElementById('journalPassword').value = '';
+        }
+
+        function saveJournalEntry() {
+            const text = document.getElementById('journalInput').value;
+            if (!text.trim()) return;
+            journalEntries.unshift({ date: new Date().toLocaleString(), text });
+            localStorage.setItem('journalEntries', JSON.stringify(journalEntries));
+            document.getElementById('journalInput').value = '';
+            renderJournal();
+        }
+
+        function renderJournal() {
+            document.getElementById('journalEntries').innerHTML = journalEntries.map(e => `
+                <div class="card"><div class="h-date">${e.date}</div><div class="h-body">${e.text}</div></div>`).join('');
+        }
+
+        // ── ARCHIVE ───────────────────────────────────────────────────────────────
+        function savePermanentNotes() {
+            localStorage.setItem('permanentNotes', document.getElementById('permanentNotes').value);
+        }
+        function renderArchive() {
+            document.getElementById('masterArchiveList').innerHTML = masterArchive.map(item => `
+                <div class="card">
+                    <div class="h-date">${item.date}</div>
+                    <div class="h-body"><b>Mission Results:</b><br>${item.study.map(t => `${t.done ? '✅' : '❌'} ${t.text}`).join('<br>')}</div>
+                </div>`).join('');
+        }
+
+        // ── PERIOD ────────────────────────────────────────────────────────────────
+        function updatePeriodData() {
+            const lastDate = document.getElementById('lastPeriodInput').value;
+            if (!lastDate) return;
+            localStorage.setItem('lastPeriod', lastDate);
+            const start = new Date(lastDate);
+            const next = new Date(start); next.setDate(start.getDate() + 28);
+            const ovu = new Date(start); ovu.setDate(start.getDate() + 14);
+            document.getElementById('nextPeriodDate').innerText = next.toDateString();
+            document.getElementById('ovulationDate').innerText = ovu.toDateString();
+        }
+        function saveDailyPeriod() {
+            localStorage.setItem('periodToday', document.getElementById('periodSymptoms').value);
+        }
+
+        // ── QUOTES ───────────────────────────────────────────────────────────────
+        function applyPresetQuote() {
+            const val = document.getElementById('quoteSelector').value;
+            if (val === '✨ Custom Motivation') {
+                const custom = prompt('Enter your motivation ✨');
+                if (custom) {
+                    document.getElementById('pinnedText').innerText = custom;
+                    localStorage.setItem('customQuote', custom);
+                }
+            } else {
+                document.getElementById('pinnedText').innerText = val;
+            }
+            localStorage.setItem('activeQuote', val);
+        }
+
+        function checkDailyReset() {
+            const today = new Date().toDateString();
+            const lastDate = localStorage.getItem('lastOpenDate');
+            if (lastDate && lastDate !== today) {
+                masterArchive.unshift({ date: lastDate, study: [...dailyTasks] });
+                localStorage.setItem('masterArchive', JSON.stringify(masterArchive));
+                habits = habits.map(h => ({ ...h, done: false }));
+                dailyTasks = [];
+                localStorage.setItem('dailyTarget', '');
+                save();
+            }
+            localStorage.setItem('lastOpenDate', today);
+        }
+
+        // ── INIT ──────────────────────────────────────────────────────────────────
+        window.onload = async () => {
+            checkDailyReset();
+
+            const sel = document.getElementById('quoteSelector');
+            quotes.forEach(q => { let opt = document.createElement('option'); opt.value = q; opt.innerText = q; sel.appendChild(opt); });
+            const activeQuote = localStorage.getItem('activeQuote') || quotes[0];
+            sel.value = activeQuote;
+            document.getElementById('pinnedText').innerText = (activeQuote === '✨ Custom Motivation') ? (localStorage.getItem('customQuote') || 'Slay') : activeQuote;
+
+            document.getElementById('permanentNotes').value = localStorage.getItem('permanentNotes') || '';
+            document.getElementById('lastPeriodInput').value = localStorage.getItem('lastPeriod') || '';
+            document.getElementById('periodSymptoms').value = localStorage.getItem('periodToday') || '';
+
+            renderHome();
+            renderStudy();
+            renderTargets();
+            updatePeriodData();
+
+            // Load user videos from IndexedDB
+            await refreshVideoList();
+        };
+    </script>
+</body>
+</html>
